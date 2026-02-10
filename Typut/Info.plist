@@ -2,13 +2,56 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>TISInputSourceID</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>ComponentInputModeDict</key>
+	<dict>
+		<key>tsInputModeListKey</key>
+		<dict>
+			<key>com.ensan.inputmethod.Typut.Default</key>
+			<dict>
+				<key>TISInputSourceID</key>
+				<string>com.ensan.inputmethod.Typut.Default</string>
+				<key>TISIntendedLanguage</key>
+				<string>en</string>
+				<key>tsInputModeCharacterRepertoireKey</key>
+				<array>
+					<string>Latn</string>
+				</array>
+				<key>tsInputModeDefaultStateKey</key>
+				<true/>
+				<key>tsInputModeIsVisibleKey</key>
+				<true/>
+				<key>tsInputModeMenuIconFileKey</key>
+				<string>main.tiff</string>
+				<key>tsInputModePaletteIconFileKey</key>
+				<string>main.tiff</string>
+				<key>tsInputModePrimaryInScriptKey</key>
+				<true/>
+				<key>tsInputModeScriptKey</key>
+				<string>smUnicodeScript</string>
+			</dict>
+		</dict>
+		<key>tsVisibleInputModeOrderedArrayKey</key>
+		<array>
+			<string>com.ensan.inputmethod.Typut.Default</string>
+		</array>
+	</dict>
 	<key>NSPrincipalClass</key>
 	<string>$(PRODUCT_MODULE_NAME).NSManualApplication</string>
 	<key>InputMethodConnectionName</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)_Connection</string>
 	<key>InputMethodServerControllerClass</key>
 	<string>$(PRODUCT_MODULE_NAME).TyputInputController</string>
+	<key>InputMethodServerDelegateClass</key>
+	<string>$(PRODUCT_MODULE_NAME).TyputInputController</string>
+	<key>com.ensan.inputmethod.Typut</key>
+	<string>Typut</string>
+	<key>com.ensan.inputmethod.Typut.Default</key>
+	<string>Typut</string>
 	<key>LSBackgroundOnly</key>
+	<false/>
+	<key>LSUIElement</key>
 	<true/>
 	<key>tsInputMethodCharacterRepertoireKey</key>
 	<array>
