@@ -6,6 +6,7 @@ xcuserdata/
 *.xcscmblueprint
 build/
 DerivedData/
+log
 *.moved-aside
 *.pbxuser
 *.mode1v3
