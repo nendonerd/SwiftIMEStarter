@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -euo pipefail  
+
+# strict bash error handling
+# -e: exit immediately if a command exits with a non-zero status
+# -u: treat unset variables as an error and exit immediately
+# -o pipefail: the return value of a pipeline is the status of the last command
+
 
 if [[ $# -ge 1 ]]; then
   APP_PATH="$1"
@@ -64,6 +70,7 @@ if [[ -z "${MODE_ID}" ]]; then
   MODE_ID="${BUNDLE_ID}.Default"
 fi
 
+# try to refresh app registration system-wide
 LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
 if [[ -x "$LSREGISTER" ]]; then
   "$LSREGISTER" -f "$DEST_APP" >/dev/null 2>&1 || true
@@ -122,6 +129,16 @@ func sourceSummary(_ label: String, _ source: TISInputSource?) {
     print("\(label) select-capable: \(boolProperty(source, kTISPropertyInputSourceIsSelectCapable).map(String.init(describing:)) ?? "nil")")
 }
 
+func sourceID(_ source: TISInputSource) -> String {
+    stringProperty(source, kTISPropertyInputSourceID)
+}
+
+func preferredSource(mode: TISInputSource?, bundle: TISInputSource?) -> (label: String, source: TISInputSource)? {
+    if let mode { return ("mode", mode) }
+    if let bundle { return ("bundle", bundle) }
+    return nil
+}
+
 @discardableResult
 func enableSource(_ source: TISInputSource, label: String) -> OSStatus {
     let status = TISEnableInputSource(source)
@@ -169,8 +186,11 @@ guard modeSource != nil || bundleSource != nil else {
 
 sourceSummary("Mode source (pass1)", modeSource)
 sourceSummary("Bundle source (pass1)", bundleSource)
-let initialTarget = modeSource ?? bundleSource!
-sourceSummary("Initial target", initialTarget)
+guard let initialTarget = preferredSource(mode: modeSource, bundle: bundleSource) else {
+    fputs("No preferred source available for mode \(modeId) or bundle \(bundleId)\n", stderr)
+    exit(1)
+}
+sourceSummary("Initial target", initialTarget.source)
 
 if let abc = firstSource(key: kTISPropertyInputSourceID, value: "com.apple.keylayout.ABC"),
    boolProperty(abc, kTISPropertyInputSourceIsSelectCapable) == true {
@@ -180,24 +200,19 @@ if let abc = firstSource(key: kTISPropertyInputSourceID, value: "com.apple.keyla
 var seenSourceIDs = Set<String>()
 for (label, candidate) in [("mode", modeSource), ("bundle", bundleSource)] {
     guard let source = candidate else { continue }
-    let sourceId = stringProperty(source, kTISPropertyInputSourceID)
+    let sourceId = sourceID(source)
     if !seenSourceIDs.insert(sourceId).inserted {
         continue
     }
     deselectDisableSource(source, label: "\(label)-disable")
 }
 
-if let bundleSource {
-    _ = enableSource(bundleSource, label: "bundle-pass1")
-}
-if let modeSource {
-    _ = enableSource(modeSource, label: "mode-pass1")
-}
+_ = enableSource(initialTarget.source, label: "\(initialTarget.label)-pass1")
 
-if boolProperty(initialTarget, kTISPropertyInputSourceIsSelectCapable) == true {
-    _ = selectSource(initialTarget, label: "target-pass1")
+if boolProperty(initialTarget.source, kTISPropertyInputSourceIsSelectCapable) == true {
+    _ = selectSource(initialTarget.source, label: "\(initialTarget.label)-pass1")
 } else {
-    print("target-pass1 is not select-capable; skipping select")
+    print("\(initialTarget.label)-pass1 is not select-capable; skipping select")
 }
 
 let waitDeadline = Date().addingTimeInterval(2.0)
@@ -213,16 +228,19 @@ bundleSource = firstSource(key: kTISPropertyInputSourceID, value: bundleId)
 sourceSummary("Mode source (pass2)", modeSource)
 sourceSummary("Bundle source (pass2)", bundleSource)
 
-if let bundleSource {
-    _ = enableSource(bundleSource, label: "bundle-pass2")
+guard let targetPass2 = preferredSource(mode: modeSource, bundle: bundleSource) else {
+    fputs("No preferred source available in pass2 for mode \(modeId) or bundle \(bundleId)\n", stderr)
+    exit(1)
 }
-if let modeSource {
-    _ = enableSource(modeSource, label: "mode-pass2")
+_ = enableSource(targetPass2.source, label: "\(targetPass2.label)-pass2")
+if boolProperty(targetPass2.source, kTISPropertyInputSourceIsSelectCapable) == true {
+    _ = selectSource(targetPass2.source, label: "\(targetPass2.label)-pass2")
+} else {
+    print("\(targetPass2.label)-pass2 is not select-capable; skipping select")
 }
-if let modeSource, boolProperty(modeSource, kTISPropertyInputSourceIsSelectCapable) == true {
-    _ = selectSource(modeSource, label: "mode-pass2")
-} else if let bundleSource, boolProperty(bundleSource, kTISPropertyInputSourceIsSelectCapable) == true {
-    _ = selectSource(bundleSource, label: "bundle-pass2")
+
+if let modeSource, let bundleSource, sourceID(modeSource) != sourceID(bundleSource) {
+    deselectDisableSource(bundleSource, label: "bundle-cleanup-pass2")
 }
 
 let tisNotifications = [
@@ -276,6 +294,17 @@ func mergeEntries(domain: String, key: String, entries: [Entry]) {
     var prefs = defaults.persistentDomain(forName: domain) ?? [:]
     var current = prefs[key] as? [Entry] ?? []
     var inserted = 0
+    var removed = 0
+
+    // Keep only the per-domain allowed Typut entries.
+    current.removeAll { entry in
+        guard (entry["Bundle ID"] as? String) == bundleId else { return false }
+        if !entries.contains(where: { entryMatches(entry, $0) }) {
+            removed += 1
+            return true
+        }
+        return false
+    }
 
     for entry in entries where !current.contains(where: { entryMatches($0, entry) }) {
         current.append(entry)
@@ -285,7 +314,7 @@ func mergeEntries(domain: String, key: String, entries: [Entry]) {
     prefs[key] = current
     defaults.setPersistentDomain(prefs, forName: domain)
     defaults.synchronize()
-    print("Updated \(domain) \(key): +\(inserted), total \(current.count)")
+    print("Updated \(domain) \(key): +\(inserted), -\(removed), total \(current.count)")
 }
 
 mergeEntries(
@@ -296,7 +325,7 @@ mergeEntries(
 mergeEntries(
     domain: "com.apple.HIToolbox",
     key: "AppleEnabledInputSources",
-    entries: [keyboardEntry, modeEntry]
+    entries: [modeEntry]
 )
 mergeEntries(
     domain: "com.apple.HIToolbox",
