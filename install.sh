@@ -67,7 +67,7 @@ xattr -dr com.apple.quarantine "$DEST_APP" 2>/dev/null || true
 BUNDLE_ID="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$DEST_APP/Contents/Info.plist")"
 MODE_ID="$(/usr/libexec/PlistBuddy -c 'Print :ComponentInputModeDict:tsVisibleInputModeOrderedArrayKey:0' "$DEST_APP/Contents/Info.plist" 2>/dev/null || true)"
 if [[ -z "${MODE_ID}" ]]; then
-  MODE_ID="${BUNDLE_ID}.Default"
+  MODE_ID="${BUNDLE_ID}"
 fi
 
 # try to refresh app registration system-wide
@@ -271,6 +271,7 @@ import Foundation
 let bundleId = CommandLine.arguments[1]
 let modeId = CommandLine.arguments[2]
 typealias Entry = [String: Any]
+let hasSeparateMode = modeId != bundleId
 
 let keyboardEntry: Entry = [
     "Bundle ID": bundleId,
@@ -281,6 +282,9 @@ let modeEntry: Entry = [
     "Input Mode": modeId,
     "InputSourceKind": "Input Mode",
 ]
+let thirdPartyEntries: [Entry] = hasSeparateMode ? [keyboardEntry, modeEntry] : [keyboardEntry]
+let enabledEntries: [Entry] = hasSeparateMode ? [modeEntry] : [keyboardEntry]
+let historyEntries: [Entry] = hasSeparateMode ? [modeEntry] : [keyboardEntry]
 
 func entryMatches(_ lhs: Entry, _ rhs: Entry) -> Bool {
     let kindMatch = (lhs["InputSourceKind"] as? String) == (rhs["InputSourceKind"] as? String)
@@ -320,17 +324,17 @@ func mergeEntries(domain: String, key: String, entries: [Entry]) {
 mergeEntries(
     domain: "com.apple.inputsources",
     key: "AppleEnabledThirdPartyInputSources",
-    entries: [keyboardEntry, modeEntry]
+    entries: thirdPartyEntries
 )
 mergeEntries(
     domain: "com.apple.HIToolbox",
     key: "AppleEnabledInputSources",
-    entries: [modeEntry]
+    entries: enabledEntries
 )
 mergeEntries(
     domain: "com.apple.HIToolbox",
     key: "AppleInputSourceHistory",
-    entries: [modeEntry]
+    entries: historyEntries
 )
 SWIFT
 
