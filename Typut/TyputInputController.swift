@@ -98,14 +98,95 @@ enum InputState {
 
 @objc(TyputInputController)
 class TyputInputController: IMKInputController {
+    private let rightOptionKeyCode: UInt16 = 61
+    private var rightOptionHoldStart: Date? = nil
+    private var rightOptionHoldCancelled = false
     private var composingText: [String] = []
     private var selectedCandidate: String? = nil
     private var inputState: InputState = .none
     private var candidatesWindow: IMKCandidates = IMKCandidates()
 
+    private func debugLog(_ message: String) {
+        NSLog("[TyputDebug][InputController] \(message)")
+    }
+
+    override func recognizedEvents(_ sender: Any!) -> Int {
+        let mask: NSEvent.EventTypeMask = [.keyDown, .flagsChanged]
+        self.debugLog("recognizedEvents mask=\(mask.rawValue)")
+        return Int(mask.rawValue)
+    }
+
     override init!(server: IMKServer!, delegate: Any!, client inputClient: Any!) {
         self.candidatesWindow = IMKCandidates(server: server, panelType: kIMKSingleColumnScrollingCandidatePanel)
         super.init(server: server, delegate: delegate, client: inputClient)
+        self.debugLog("initialized")
+    }
+
+    private func commitCurrentCompositionIfNeeded(client: IMKTextInput) {
+        guard !self.composingText.isEmpty else { return }
+        self.debugLog("committing existing composition before right-option hold: \(self.composingText.joined())")
+        _ = self.handleClientAction(.commitMarkedText, client: client)
+        self.inputState = .none
+    }
+
+    private func startRightOptionHold(client: IMKTextInput) -> Bool {
+        guard self.rightOptionHoldStart == nil else { return true }
+
+        self.commitCurrentCompositionIfNeeded(client: client)
+        self.inputState = .composing
+        self.composingText.removeAll()
+        self.selectedCandidate = nil
+        self.candidatesWindow.hide()
+
+        // Start a fresh composition session for elapsed-time output.
+        client.setMarkedText(
+            "",
+            selectionRange: NSRange(location: 0, length: 0),
+            replacementRange: .notFound
+        )
+
+        self.rightOptionHoldStart = Date()
+        self.rightOptionHoldCancelled = false
+        self.debugLog("right-option hold started")
+        return true
+    }
+
+    private func stopRightOptionHold(client: IMKTextInput) -> Bool {
+        guard let startedAt = self.rightOptionHoldStart else { return false }
+        defer {
+            self.rightOptionHoldStart = nil
+            self.rightOptionHoldCancelled = false
+            self.inputState = .none
+            self.composingText.removeAll()
+            self.selectedCandidate = nil
+            self.candidatesWindow.hide()
+        }
+
+        guard !self.rightOptionHoldCancelled else { return true }
+
+        let elapsedSeconds = Date().timeIntervalSince(startedAt)
+        let elapsedText = String(format: "[%.2fs]", elapsedSeconds)
+        self.debugLog("right-option hold stopped, elapsed=\(elapsedSeconds)s, output=\(elapsedText)")
+
+        self.inputState = .composing
+        self.composingText = [elapsedText]
+        client.setMarkedText(
+            elapsedText,
+            selectionRange: NSRange(location: elapsedText.count, length: 0),
+            replacementRange: .notFound
+        )
+        _ = self.handleClientAction(.commitMarkedText, client: client)
+        return true
+    }
+
+    private func handleRightOptionFlagsChanged(_ event: NSEvent, client: IMKTextInput) -> Bool {
+        guard event.keyCode == self.rightOptionKeyCode else { return false }
+        let isOptionActive = event.modifierFlags.intersection(.deviceIndependentFlagsMask).contains(.option)
+        self.debugLog("flagsChanged right-option keyCode=\(event.keyCode) optionActive=\(isOptionActive)")
+        if self.rightOptionHoldStart == nil {
+            return self.startRightOptionHold(client: client)
+        }
+        return self.stopRightOptionHold(client: client)
     }
 
     override func handle(_ event: NSEvent!, client sender: Any!) -> Bool {
@@ -113,6 +194,19 @@ class TyputInputController: IMKInputController {
         guard let client = sender as? IMKTextInput else {
             return false
         }
+        if event.type == .flagsChanged {
+            if self.handleRightOptionFlagsChanged(event, client: client) {
+                return true
+            }
+            return false
+        }
+        self.debugLog("handle event type=\(event.type.rawValue) keyCode=\(event.keyCode)")
+
+        if self.rightOptionHoldStart != nil {
+            self.rightOptionHoldCancelled = true
+            self.debugLog("right-option hold cancelled by event type=\(event.type.rawValue) keyCode=\(event.keyCode)")
+        }
+
         let clientAction = switch event.keyCode {
         case 36: // Enter
             self.inputState.event(event, userAction: .enter)

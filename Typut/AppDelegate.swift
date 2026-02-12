@@ -33,6 +33,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         self.server = IMKServer(name: Bundle.main.infoDictionary?["InputMethodConnectionName"] as? String, bundleIdentifier: Bundle.main.bundleIdentifier)
         self.candidatesWindow = IMKCandidates(server: server, panelType: kIMKSingleRowSteppingCandidatePanel, styleType: kIMKMain)
         NSLog("tried connection")
+        NSLog(
+            "[TyputDebug][AppDelegate] launch pid=%d bundle=%@ connection=%@",
+            ProcessInfo.processInfo.processIdentifier,
+            Bundle.main.bundleIdentifier ?? "nil",
+            Bundle.main.infoDictionary?["InputMethodConnectionName"] as? String ?? "nil"
+        )
     }
 
     func applicationWillTerminate(_ notification: Notification) {
