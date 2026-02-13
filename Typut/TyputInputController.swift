@@ -110,6 +110,7 @@ class TyputInputController: IMKInputController {
         NSLog("[TyputDebug][InputController] \(message)")
     }
 
+    // declares accepted events
     override func recognizedEvents(_ sender: Any!) -> Int {
         let mask: NSEvent.EventTypeMask = [.keyDown, .flagsChanged]
         self.debugLog("recognizedEvents mask=\(mask.rawValue)")
@@ -189,6 +190,12 @@ class TyputInputController: IMKInputController {
         return self.stopRightOptionHold(client: client)
     }
 
+    // central dispatcher, just a bunch of if else to map user input into coressbonding userAction
+    // instance method of IMKServerInput, return True to tell os that the event is handled, otherwise False
+    // sender -> The object in the client app that is currently receiving text input, that conforms to NSTextInputClient, like NSTextView, NSTextField, ...
+    // IMKTextInput is an InputMethodKit-side abstraction/bridge used by the IME, to decouple IMK from AppKit details
+    // NSTextInputClient  =>  actual implementation in the app
+    // IMKTextInput       =>  IMK-facing interface abstraction
     override func handle(_ event: NSEvent!, client sender: Any!) -> Bool {
         // get client to insert
         guard let client = sender as? IMKTextInput else {
@@ -209,7 +216,7 @@ class TyputInputController: IMKInputController {
 
         let clientAction = switch event.keyCode {
         case 36: // Enter
-            self.inputState.event(event, userAction: .enter)
+            self.inputState.event(event, userAction: .enter)  // for a current input state, if a userAction happened, find the corresbonding clientAction
         case 48: // Tab
             self.inputState.event(event, userAction: .tab)
         case 49: // Space
@@ -238,11 +245,12 @@ class TyputInputController: IMKInputController {
         return self.handleClientAction(clientAction, client: client)
     }
 
+    // execute the userAction
     func handleClientAction(_ clientAction: ClientAction, client: IMKTextInput) -> Bool {
         // return only false
         switch clientAction {
         case .showCandidateWindow:
-            self.candidatesWindow.update()
+            self.candidatesWindow.update()  // tells IMKCandidates to show/update, then it calls the controller's `candidates` method to fetch the list
             self.candidatesWindow.show()
             // MARK: this is required to move the window front of the spotlight panel
             self.candidatesWindow.perform(Selector(("setWindowLevel:")), with: NSWindow.Level.modalPanel)
@@ -251,13 +259,14 @@ class TyputInputController: IMKInputController {
         case .appendToMarkedText(let string):
             self.candidatesWindow.hide()
             self.composingText.append(string)
+            // On the client app side, Show this text as in-progress composition (preedit), not as final committed content. (implemented by the client side)
             client.setMarkedText(
                 self.composingText.joined(),
-                selectionRange: .notFound,
-                replacementRange: .notFound
+                selectionRange: .notFound,  // tells the client app to set caret/selection inside the marked text (preedit text)
+                replacementRange: .notFound // tells the client app which existing text range should be replaced when inserting or updating the marked text. if it's .notFound, then it will replace the entire existing marked region with the new marked text you provide
             )
         case .commitMarkedText:
-            client.insertText(self.composingText.joined(), replacementRange: .notFound)
+            client.insertText(self.composingText.joined(), replacementRange: .notFound)  // Sends fully converted text to an input session.
             self.composingText.removeAll()
             self.candidatesWindow.hide()
         case .submitSelectedCandidate:

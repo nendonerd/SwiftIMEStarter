@@ -8,17 +8,17 @@
 import Foundation
 
 extension UnicodeScalar {
-    /// ローマ字の大文字かどうか
+    /// Whether it is an uppercase Roman letter.
     @inlinable
     var isRomanUppercased: Bool {
         ("A"..."Z").contains(self)
     }
-    /// ローマ字の小文字かどうか
+    /// Whether it is a lowercase Roman letter.
     @inlinable
     var isRomanLowercased: Bool {
         ("a"..."z").contains(self)
     }
-    /// ローマ字の数字かどうか
+    /// Whether it is a Roman digit.
     @inlinable
     var isRomanNumber: Bool {
         ("0"..."9").contains(self)
@@ -26,19 +26,19 @@ extension UnicodeScalar {
 }
 
 struct TypographyCandidate {
-    /// 装飾文字に変換した結果を返す関数。
+    /// Returns conversion results as decorative characters.
     /// - parameters:
-    ///   - text: 対象文字列。
+    ///   - text: Target string.
     /// - note:
-    ///    現在英字のみ。ギリシャ文字や数字に対応する必要あり。
+    ///    Currently supports only Latin letters. Greek letters and digits still need support.
     static func typographicalCandidates(_ string: String) -> [String] {
         let strings = Self.typographicalLetters(from: string)
         return strings
     }
 
-    /// 装飾文字を実際に作る部分。
+    /// The part that actually creates decorative characters.
     /// - parameters:
-    ///   - text: 対象文字列。
+    ///   - text: Target string.
     private static func typographicalLetters(from text: String) -> [String] {
         var strings: [String] = []
         /// 𝐁𝐎𝐋𝐃
