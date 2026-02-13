@@ -71,6 +71,7 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REGISTER_SWIFT_SCRIPT="$SCRIPT_DIR/scripts/register_input_source.swift"
 SYNC_PREFS_SWIFT_SCRIPT="$SCRIPT_DIR/scripts/sync_input_source_prefs.swift"
+WATCH_READY_SWIFT_SCRIPT="$SCRIPT_DIR/scripts/watch_input_source_ready.swift"
 
 # try to refresh app registration system-wide
 LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
@@ -113,6 +114,12 @@ if run_as_gui_user /usr/bin/defaults read com.apple.inputsources AppleEnabledThi
 else
   echo "warning: inputsources still does not list mode $MODE_ID immediately"
 fi
+
+echo "Waiting for Typut input-source readiness (permission-grant flow, Ctrl-C to stop)..."
+run_as_gui_user env \
+  SWIFT_MODULECACHE_PATH=/tmp/swift-module-cache \
+  CLANG_MODULE_CACHE_PATH=/tmp/clang-module-cache \
+  swift "$WATCH_READY_SWIFT_SCRIPT" "$BUNDLE_ID" "$MODE_ID" "0"
 
 echo "Installed to: $DEST_APP"
 echo "If Typut is still not listed, log out and log back in once."
