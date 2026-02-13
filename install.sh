@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
-set -euo pipefail  
+set -euo pipefail
 
 # strict bash error handling
 # -e: exit immediately if a command exits with a non-zero status
 # -u: treat unset variables as an error and exit immediately
 # -o pipefail: the return value of a pipeline is the status of the last command
-
 
 if [[ $# -ge 1 ]]; then
   APP_PATH="$1"
@@ -69,6 +68,9 @@ MODE_ID="$(/usr/libexec/PlistBuddy -c 'Print :ComponentInputModeDict:tsVisibleIn
 if [[ -z "${MODE_ID}" ]]; then
   MODE_ID="${BUNDLE_ID}"
 fi
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REGISTER_SWIFT_SCRIPT="$SCRIPT_DIR/scripts/register_input_source.swift"
+SYNC_PREFS_SWIFT_SCRIPT="$SCRIPT_DIR/scripts/sync_input_source_prefs.swift"
 
 # try to refresh app registration system-wide
 LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
@@ -83,268 +85,23 @@ run_as_gui_user rm -f "$GUI_HOME/Library/Caches/com.apple.tiswitcher.cache" >/de
 
 echo "Registering input source (Carbon TIS API) as user: $GUI_USER"
 run_as_gui_user env \
-SWIFT_MODULECACHE_PATH=/tmp/swift-module-cache \
-CLANG_MODULE_CACHE_PATH=/tmp/clang-module-cache \
-swift - "$DEST_APP" "$BUNDLE_ID" "$MODE_ID" <<'SWIFT'
-import Foundation
-import Carbon
-
-let appPath = CommandLine.arguments[1]
-let bundleId = CommandLine.arguments[2]
-let modeId = CommandLine.arguments[3]
-
-func sources(key: CFString, value: String) -> [TISInputSource] {
-    let filter = [key: value as CFString] as CFDictionary
-    let sources = TISCreateInputSourceList(filter, true).takeRetainedValue() as! [TISInputSource]
-    print("Found input sources for \(value): \(sources.count)")
-    return sources
-}
-
-func firstSource(key: CFString, value: String) -> TISInputSource? {
-    sources(key: key, value: value).first
-}
-
-func boolProperty(_ source: TISInputSource, _ key: CFString) -> Bool? {
-    guard let raw = TISGetInputSourceProperty(source, key) else { return nil }
-    guard let value = unsafeBitCast(raw, to: CFBoolean?.self) else { return nil }
-    return CFBooleanGetValue(value)
-}
-
-func stringProperty(_ source: TISInputSource, _ key: CFString) -> String {
-    guard let raw = TISGetInputSourceProperty(source, key) else { return "nil" }
-    let value = Unmanaged<AnyObject>.fromOpaque(raw).takeUnretainedValue()
-    return String(describing: value)
-}
-
-func sourceSummary(_ label: String, _ source: TISInputSource?) {
-    guard let source else {
-        print("\(label): nil")
-        return
-    }
-    print("\(label) id: \(stringProperty(source, kTISPropertyInputSourceID))")
-    print("\(label) name: \(stringProperty(source, kTISPropertyLocalizedName))")
-    print("\(label) type: \(stringProperty(source, kTISPropertyInputSourceType))")
-    print("\(label) enabled: \(boolProperty(source, kTISPropertyInputSourceIsEnabled).map(String.init(describing:)) ?? "nil")")
-    print("\(label) selected: \(boolProperty(source, kTISPropertyInputSourceIsSelected).map(String.init(describing:)) ?? "nil")")
-    print("\(label) select-capable: \(boolProperty(source, kTISPropertyInputSourceIsSelectCapable).map(String.init(describing:)) ?? "nil")")
-}
-
-func sourceID(_ source: TISInputSource) -> String {
-    stringProperty(source, kTISPropertyInputSourceID)
-}
-
-func preferredSource(mode: TISInputSource?, bundle: TISInputSource?) -> (label: String, source: TISInputSource)? {
-    if let mode { return ("mode", mode) }
-    if let bundle { return ("bundle", bundle) }
-    return nil
-}
-
-@discardableResult
-func enableSource(_ source: TISInputSource, label: String) -> OSStatus {
-    let status = TISEnableInputSource(source)
-    print("TISEnableInputSource(\(label)): \(status)")
-    return status
-}
-
-@discardableResult
-func selectSource(_ source: TISInputSource, label: String) -> OSStatus {
-    let status = TISSelectInputSource(source)
-    print("TISSelectInputSource(\(label)): \(status)")
-    return status
-}
-
-func deselectDisableSource(_ source: TISInputSource, label: String) {
-    let deselectStatus = TISDeselectInputSource(source)
-    print("TISDeselectInputSource(\(label)): \(deselectStatus)")
-    let disableStatus = TISDisableInputSource(source)
-    print("TISDisableInputSource(\(label)): \(disableStatus)")
-}
-
-let distributedCenter = DistributedNotificationCenter.default()
-let enabledChangedName = Notification.Name(rawValue: kTISNotifyEnabledKeyboardInputSourcesChanged as String)
-var enabledChangedCount = 0
-let enabledObserver = distributedCenter.addObserver(forName: enabledChangedName, object: nil, queue: nil) { _ in
-    enabledChangedCount += 1
-    print("Observed notification: \(enabledChangedName.rawValue) count=\(enabledChangedCount)")
-}
-defer {
-    distributedCenter.removeObserver(enabledObserver)
-}
-
-let appURL = URL(fileURLWithPath: appPath) as CFURL
-let registerStatus = TISRegisterInputSource(appURL)
-print("TISRegisterInputSource: \(registerStatus)")
-guard registerStatus == noErr else { exit(1) }
-
-var modeSource = firstSource(key: kTISPropertyInputSourceID, value: modeId)
-var bundleSource = firstSource(key: kTISPropertyInputSourceID, value: bundleId)
-    ?? firstSource(key: kTISPropertyBundleID, value: bundleId)
-guard modeSource != nil || bundleSource != nil else {
-    fputs("No TIS source found after registration for mode \(modeId) or bundle \(bundleId)\n", stderr)
-    exit(1)
-}
-
-sourceSummary("Mode source (pass1)", modeSource)
-sourceSummary("Bundle source (pass1)", bundleSource)
-guard let initialTarget = preferredSource(mode: modeSource, bundle: bundleSource) else {
-    fputs("No preferred source available for mode \(modeId) or bundle \(bundleId)\n", stderr)
-    exit(1)
-}
-sourceSummary("Initial target", initialTarget.source)
-
-if let abc = firstSource(key: kTISPropertyInputSourceID, value: "com.apple.keylayout.ABC"),
-   boolProperty(abc, kTISPropertyInputSourceIsSelectCapable) == true {
-    _ = selectSource(abc, label: "ABC")
-}
-
-var seenSourceIDs = Set<String>()
-for (label, candidate) in [("mode", modeSource), ("bundle", bundleSource)] {
-    guard let source = candidate else { continue }
-    let sourceId = sourceID(source)
-    if !seenSourceIDs.insert(sourceId).inserted {
-        continue
-    }
-    deselectDisableSource(source, label: "\(label)-disable")
-}
-
-_ = enableSource(initialTarget.source, label: "\(initialTarget.label)-pass1")
-
-if boolProperty(initialTarget.source, kTISPropertyInputSourceIsSelectCapable) == true {
-    _ = selectSource(initialTarget.source, label: "\(initialTarget.label)-pass1")
-} else {
-    print("\(initialTarget.label)-pass1 is not select-capable; skipping select")
-}
-
-let waitDeadline = Date().addingTimeInterval(2.0)
-while Date() < waitDeadline && enabledChangedCount == 0 {
-    CFRunLoopRunInMode(.defaultMode, 0.1, true)
-}
-print("Enabled-source notifications observed: \(enabledChangedCount)")
-
-modeSource = firstSource(key: kTISPropertyInputSourceID, value: modeId)
-bundleSource = firstSource(key: kTISPropertyInputSourceID, value: bundleId)
-    ?? firstSource(key: kTISPropertyBundleID, value: bundleId)
-
-sourceSummary("Mode source (pass2)", modeSource)
-sourceSummary("Bundle source (pass2)", bundleSource)
-
-guard let targetPass2 = preferredSource(mode: modeSource, bundle: bundleSource) else {
-    fputs("No preferred source available in pass2 for mode \(modeId) or bundle \(bundleId)\n", stderr)
-    exit(1)
-}
-_ = enableSource(targetPass2.source, label: "\(targetPass2.label)-pass2")
-if boolProperty(targetPass2.source, kTISPropertyInputSourceIsSelectCapable) == true {
-    _ = selectSource(targetPass2.source, label: "\(targetPass2.label)-pass2")
-} else {
-    print("\(targetPass2.label)-pass2 is not select-capable; skipping select")
-}
-
-if let modeSource, let bundleSource, sourceID(modeSource) != sourceID(bundleSource) {
-    deselectDisableSource(bundleSource, label: "bundle-cleanup-pass2")
-}
-
-let tisNotifications = [
-    "com.apple.Carbon.TISNotifyEnabledKeyboardInputSourcesChanged",
-    "com.apple.Carbon.TISNotifySelectedKeyboardInputSourceChanged",
-    "com.apple.Carbon.TISNotifySelectedKeyboardInputSourceChangedForCurrentSession",
-]
-for notification in tisNotifications {
-    distributedCenter.postNotificationName(
-        Notification.Name(notification),
-        object: nil,
-        userInfo: nil,
-        deliverImmediately: true
-    )
-    print("Posted notification: \(notification)")
-}
-
-CFRunLoopRunInMode(.defaultMode, 0.8, false)
-SWIFT
+  SWIFT_MODULECACHE_PATH=/tmp/swift-module-cache \
+  CLANG_MODULE_CACHE_PATH=/tmp/clang-module-cache \
+  swift "$REGISTER_SWIFT_SCRIPT" "$DEST_APP" "$BUNDLE_ID" "$MODE_ID"
 
 echo "Syncing input-source preference domains..."
 run_as_gui_user env \
-SWIFT_MODULECACHE_PATH=/tmp/swift-module-cache \
-CLANG_MODULE_CACHE_PATH=/tmp/clang-module-cache \
-swift - "$BUNDLE_ID" "$MODE_ID" <<'SWIFT'
-import Foundation
-
-let bundleId = CommandLine.arguments[1]
-let modeId = CommandLine.arguments[2]
-typealias Entry = [String: Any]
-let hasSeparateMode = modeId != bundleId
-
-let keyboardEntry: Entry = [
-    "Bundle ID": bundleId,
-    "InputSourceKind": "Keyboard Input Method",
-]
-let modeEntry: Entry = [
-    "Bundle ID": bundleId,
-    "Input Mode": modeId,
-    "InputSourceKind": "Input Mode",
-]
-let thirdPartyEntries: [Entry] = hasSeparateMode ? [keyboardEntry, modeEntry] : [keyboardEntry]
-let enabledEntries: [Entry] = hasSeparateMode ? [modeEntry] : [keyboardEntry]
-let historyEntries: [Entry] = hasSeparateMode ? [modeEntry] : [keyboardEntry]
-
-func entryMatches(_ lhs: Entry, _ rhs: Entry) -> Bool {
-    let kindMatch = (lhs["InputSourceKind"] as? String) == (rhs["InputSourceKind"] as? String)
-    let bundleMatch = (lhs["Bundle ID"] as? String) == (rhs["Bundle ID"] as? String)
-    let modeMatch = (lhs["Input Mode"] as? String) == (rhs["Input Mode"] as? String)
-    return kindMatch && bundleMatch && modeMatch
-}
-
-func mergeEntries(domain: String, key: String, entries: [Entry]) {
-    let defaults = UserDefaults.standard
-    var prefs = defaults.persistentDomain(forName: domain) ?? [:]
-    var current = prefs[key] as? [Entry] ?? []
-    var inserted = 0
-    var removed = 0
-
-    // Keep only the per-domain allowed Typut entries.
-    current.removeAll { entry in
-        guard (entry["Bundle ID"] as? String) == bundleId else { return false }
-        if !entries.contains(where: { entryMatches(entry, $0) }) {
-            removed += 1
-            return true
-        }
-        return false
-    }
-
-    for entry in entries where !current.contains(where: { entryMatches($0, entry) }) {
-        current.append(entry)
-        inserted += 1
-    }
-
-    prefs[key] = current
-    defaults.setPersistentDomain(prefs, forName: domain)
-    defaults.synchronize()
-    print("Updated \(domain) \(key): +\(inserted), -\(removed), total \(current.count)")
-}
-
-mergeEntries(
-    domain: "com.apple.inputsources",
-    key: "AppleEnabledThirdPartyInputSources",
-    entries: thirdPartyEntries
-)
-mergeEntries(
-    domain: "com.apple.HIToolbox",
-    key: "AppleEnabledInputSources",
-    entries: enabledEntries
-)
-mergeEntries(
-    domain: "com.apple.HIToolbox",
-    key: "AppleInputSourceHistory",
-    entries: historyEntries
-)
-SWIFT
+  SWIFT_MODULECACHE_PATH=/tmp/swift-module-cache \
+  CLANG_MODULE_CACHE_PATH=/tmp/clang-module-cache \
+  swift "$SYNC_PREFS_SWIFT_SCRIPT" "$BUNDLE_ID" "$MODE_ID"
 
 echo "Refreshing text input/session agents..."
-kill_gui_proc "TextInputMenuAgent"
-kill_gui_proc "TextInputSwitcher"
-kill_gui_proc "localizationswitcherd"
-kill_gui_proc "pboard"
-refresh_gui_job "com.apple.cfprefsd.agent"
-kill_gui_proc "SystemUIServer"
+# kill_gui_proc "TextInputMenuAgent"
+# kill_gui_proc "TextInputSwitcher"
+# kill_gui_proc "localizationswitcherd"
+# kill_gui_proc "pboard"
+# refresh_gui_job "com.apple.cfprefsd.agent"
+# kill_gui_proc "SystemUIServer"
 
 if run_as_gui_user /usr/bin/defaults read com.apple.HIToolbox AppleEnabledInputSources 2>/dev/null | /usr/bin/grep -q "$BUNDLE_ID"; then
   echo "HIToolbox now includes $BUNDLE_ID"
