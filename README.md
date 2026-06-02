@@ -1,10 +1,12 @@
-# Typut No-Reboot IME Template
+# SwiftIMEStarter
 
-This repository is a fork of the original [Typut](https://github.com/ensan-hcl/Typut) project. It keeps Typut's small Swift/InputMethodKit demo structure and adds a practical installer flow for macOS input methods.
+SwiftIMEStarter is a fork of the original [Typut](https://github.com/ensan-hcl/Typut) project. It keeps Typut's small Swift/InputMethodKit demo structure and adds a practical installer flow for macOS input methods.
 
-The main problem solved here is the usual "install the input method, then log out or reboot before it works" loop. This fork builds and installs Typut, registers the input source in the current GUI session, syncs macOS input-source preferences, and waits for the permission flow so the IME can become available without a mandatory logout or reboot.
+The main problem solved here is the usual "install the input method, then log out or reboot before it works" loop. This project builds and installs the included Typut demo input method, registers the input source in the current GUI session, syncs macOS input-source preferences, and waits for the permission flow so the IME can become available without a mandatory logout or reboot.
 
 It is intended as a base template for future AI-assisted input methods: local LLM writing tools, specialized completion engines, typography helpers, command-driven text transforms, or other IME experiments that need a fast build/install/test loop.
+
+The repository is named `SwiftIMEStarter`; the included demo input method still uses the `Typut` app name, source folder, and bundle identifiers. If you use this as a product starter, rename those identifiers before distribution.
 
 ## Features
 
@@ -68,7 +70,7 @@ On first install, macOS may open a privacy/permission page for the input method.
 sudo ./install.sh
 ```
 
-Then verify Typut in:
+Then verify the installed Typut demo input method in:
 
 - a newly opened app
 - an already-running app
@@ -89,7 +91,7 @@ Testing both cases matters because already-running apps are the hard case for no
 
 ## Using This As A Template
 
-Use this fork when you want an IME project that is small enough to modify quickly, but already has the installation loop needed for real macOS testing.
+Use SwiftIMEStarter when you want an IME project that is small enough to modify quickly, but already has the installation loop needed for real macOS testing.
 
 Good starting points:
 
@@ -100,7 +102,7 @@ Good starting points:
 
 ## Uninstall
 
-Remove the installed app:
+Remove the installed demo app:
 
 ```bash
 sudo rm -rf "/Library/Input Methods/Typut.app"
@@ -122,4 +124,3 @@ References from the upstream project:
 - https://www.logcg.com/en/archives/2078.html
 - https://stackoverflow.com/questions/27813151/how-to-develop-a-simple-input-method-for-mac-os-x-in-swift
 - [日本語入力を作るときに必要だった本](https://mzp.booth.pm/items/809262)
-

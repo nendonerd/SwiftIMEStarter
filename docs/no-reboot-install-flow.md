@@ -1,8 +1,10 @@
 # No-Reboot IME Install Flow
 
-This document describes the install flow used by this Typut fork to make a macOS input method available without requiring logout or reboot.
+This document describes the install flow used by SwiftIMEStarter to make a macOS input method available without requiring logout or reboot.
 
 The flow is intended as a reusable starting point for future InputMethodKit projects, including AI-assisted input methods that need a reliable local development and installation loop.
+
+The current template ships with the Typut demo app and bundle identifiers, so install examples still reference `Typut.app`. Rename the app, bundle ID, and input mode IDs when turning the template into a separate product.
 
 ## Problem
 
@@ -13,13 +15,13 @@ Traditional macOS input method installation is usually:
 3. Log out or reboot.
 4. Add/select the input method from System Settings.
 
-That flow is slow for development and painful for projects that need frequent iteration. The goal of this fork is to make the install step refresh the relevant macOS input source state in the current login session.
+That flow is slow for development and painful for projects that need frequent iteration. The goal of SwiftIMEStarter is to make the install step refresh the relevant macOS input source state in the current login session.
 
 ## Current Flow
 
 The install script performs these steps:
 
-1. Copies `Typut.app` into `/Library/Input Methods/Typut.app`.
+1. Copies the included `Typut.app` demo into `/Library/Input Methods/Typut.app`.
 2. Clears quarantine attributes and sets ownership/permissions.
 3. Registers the app with Launch Services.
 4. Registers the input source using Carbon TIS APIs.
@@ -77,7 +79,7 @@ sudo ./install.sh
 
 ## Why This Is Useful As A Template
 
-This fork keeps the input method small and understandable while solving a practical install problem. It can be used as a base for:
+SwiftIMEStarter keeps the input method small and understandable while solving a practical install problem. It can be used as a base for:
 
 - AI-assisted text input prototypes.
 - Local LLM-powered composition tools.
@@ -110,4 +112,3 @@ sudo ./install.sh
 ```
 
 Then test in both a newly opened app and an already-running app. The second case is important because it validates current-session refresh behavior.
-
