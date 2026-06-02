@@ -1,12 +1,10 @@
 # SwiftIMEStarter
 
-SwiftIMEStarter is a fork of the original [Typut](https://github.com/ensan-hcl/Typut) project. It keeps Typut's small Swift/InputMethodKit demo structure and adds a practical installer flow for macOS input methods.
+SwiftIMEStarter is a fork of the original [Typut](https://github.com/ensan-hcl/Typut) project. It keeps the original small Swift/InputMethodKit demo structure and adds a practical installer flow for macOS input methods.
 
-The main problem solved here is the usual "install the input method, then log out or reboot before it works" loop. This project builds and installs the included Typut demo input method, registers the input source in the current GUI session, syncs macOS input-source preferences, and waits for the permission flow so the IME can become available without a mandatory logout or reboot.
+The main problem solved here is the usual "install the input method, then log out or reboot before it works" loop. This project builds and installs SwiftIMEStarter, registers the input source in the current GUI session, syncs macOS input-source preferences, and waits for the permission flow so the IME can become available without a mandatory logout or reboot.
 
 It is intended as a base template for future AI-assisted input methods: local LLM writing tools, specialized completion engines, typography helpers, command-driven text transforms, or other IME experiments that need a fast build/install/test loop.
-
-The repository is named `SwiftIMEStarter`; the included demo input method still uses the `Typut` app name, source folder, and bundle identifiers. If you use this as a product starter, rename those identifiers before distribution.
 
 ## Features
 
@@ -55,10 +53,10 @@ After building, run:
 sudo ./install.sh
 ```
 
-The installer defaults to `./build/Build/Products/Debug/Typut.app` when present. You can also pass an explicit app path:
+The installer defaults to `./build/Build/Products/Debug/SwiftIMEStarter.app` when present. You can also pass an explicit app path:
 
 ```bash
-sudo ./install.sh ./build/Build/Products/Release/Typut.app
+sudo ./install.sh ./build/Build/Products/Release/SwiftIMEStarter.app
 ```
 
 On first install, macOS may open a privacy/permission page for the input method. Grant the permission when prompted. The installer includes a readiness watcher so the current session can pick up the IME after permission is granted.
@@ -70,7 +68,7 @@ On first install, macOS may open a privacy/permission page for the input method.
 sudo ./install.sh
 ```
 
-Then verify the installed Typut demo input method in:
+Then verify SwiftIMEStarter in:
 
 - a newly opened app
 - an already-running app
@@ -79,9 +77,9 @@ Testing both cases matters because already-running apps are the hard case for no
 
 ## Project Layout
 
-- `Typut/TyputInputController.swift`: input event handling, composition state, and candidate behavior.
-- `Typut/Typography/Typography.swift`: typography candidate generation.
-- `Typut/Info.plist`: IMKit metadata, input source ID, and visible input mode configuration.
+- `SwiftIMEStarter/SwiftIMEStarterInputController.swift`: input event handling, composition state, and candidate behavior.
+- `SwiftIMEStarter/Typography/Typography.swift`: typography candidate generation.
+- `SwiftIMEStarter/Info.plist`: IMKit metadata, input source ID, and visible input mode configuration.
 - `compile.sh`: local Xcode build helper.
 - `install.sh`: no-reboot install/register helper.
 - `scripts/register_input_source.swift`: Carbon TIS registration and selection logic.
@@ -96,8 +94,8 @@ Use SwiftIMEStarter when you want an IME project that is small enough to modify 
 Good starting points:
 
 - Replace `Typography/Typography.swift` with your own candidate generation.
-- Extend `TyputInputController.swift` to call a local model, rules engine, or completion service.
-- Change bundle IDs and visible input mode IDs in `Typut/Info.plist`.
+- Extend `SwiftIMEStarterInputController.swift` to call a local model, rules engine, or completion service.
+- Change bundle IDs and visible input mode IDs in `SwiftIMEStarter/Info.plist`.
 - Keep the install scripts in place while prototyping so you can iterate without logout/reboot.
 
 ## Uninstall
@@ -105,10 +103,10 @@ Good starting points:
 Remove the installed demo app:
 
 ```bash
-sudo rm -rf "/Library/Input Methods/Typut.app"
+sudo rm -rf "/Library/Input Methods/SwiftIMEStarter.app"
 ```
 
-Then remove Typut from macOS Keyboard/Input Sources settings if it is still listed.
+Then remove SwiftIMEStarter from macOS Keyboard/Input Sources settings if it is still listed.
 
 ## Notes
 

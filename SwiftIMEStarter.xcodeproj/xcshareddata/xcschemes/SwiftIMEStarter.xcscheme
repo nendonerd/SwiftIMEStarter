@@ -6,24 +6,6 @@
       parallelizeBuildables = "YES"
       buildImplicitDependencies = "YES"
       buildArchitectures = "Automatic">
-      <PostActions>
-         <ExecutionAction
-            ActionType = "Xcode.IDEStandardExecutionActionsCore.ExecutionActionType.ShellScriptAction">
-            <ActionContent
-               title = "Run Script"
-               scriptText = "# Type a script or drag a script file from your workspace to insert its path.&#10;# Configuration&#10;DESTINATION=&quot;/Library/Input Methods&quot;&#10;APP_NAME=&quot;${FULL_PRODUCT_NAME}&quot;&#10;SOURCE_APP=&quot;${BUILT_PRODUCTS_DIR}/${APP_NAME}&quot;&#10;DEST_APP=&quot;${DESTINATION}/${APP_NAME}&quot;&#10;PROCESS_NAME=&quot;${EXECUTABLE_NAME}&quot;&#10; &#10;# 1. Kill the running process to release the file lock&#10;#    (Ignores errors if process isn&apos;t running)&#10;pkill -f &quot;$PROCESS_NAME&quot; || true&#10; &#10;# 2. Ensure destination exists&#10;if [ ! -d &quot;$DESTINATION&quot; ]; then&#10;    mkdir -p &quot;$DESTINATION&quot;&#10;fi&#10; &#10;# 3. Use rsync instead of cp&#10;#    -a: Archive mode (preserves symlinks, permissions, times)&#10;#    --delete: remove old files in destination that aren&apos;t in source&#10;rsync -a --delete &quot;$SOURCE_APP/&quot; &quot;$DEST_APP/&quot;&#10; &#10;# 4. Critical: Remove &quot;Quarantine&quot; attributes&#10;#    macOS often marks copied apps as &quot;damaged&quot; or &quot;unsafe&quot;&#10;xattr -cr &quot;$DEST_APP&quot;&#10; &#10;# 5. Tell the system the app has been updated&#10;touch &quot;$DEST_APP&quot;&#10;">
-               <EnvironmentBuildable>
-                  <BuildableReference
-                     BuildableIdentifier = "primary"
-                     BlueprintIdentifier = "1A41E61326E745D9009B65D7"
-                     BuildableName = "Typut.app"
-                     BlueprintName = "Typut"
-                     ReferencedContainer = "container:Typut.xcodeproj">
-                  </BuildableReference>
-               </EnvironmentBuildable>
-            </ActionContent>
-         </ExecutionAction>
-      </PostActions>
       <BuildActionEntries>
          <BuildActionEntry
             buildForTesting = "YES"
@@ -34,9 +16,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "1A41E61326E745D9009B65D7"
-               BuildableName = "Typut.app"
-               BlueprintName = "Typut"
-               ReferencedContainer = "container:Typut.xcodeproj">
+               BuildableName = "SwiftIMEStarter.app"
+               BlueprintName = "SwiftIMEStarter"
+               ReferencedContainer = "container:SwiftIMEStarter.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -53,9 +35,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "1A41E62326E745DD009B65D7"
-               BuildableName = "TyputTests.xctest"
-               BlueprintName = "TyputTests"
-               ReferencedContainer = "container:Typut.xcodeproj">
+               BuildableName = "SwiftIMEStarterTests.xctest"
+               BlueprintName = "SwiftIMEStarterTests"
+               ReferencedContainer = "container:SwiftIMEStarter.xcodeproj">
             </BuildableReference>
          </TestableReference>
          <TestableReference
@@ -63,9 +45,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "1A41E62D26E745DD009B65D7"
-               BuildableName = "TyputUITests.xctest"
-               BlueprintName = "TyputUITests"
-               ReferencedContainer = "container:Typut.xcodeproj">
+               BuildableName = "SwiftIMEStarterUITests.xctest"
+               BlueprintName = "SwiftIMEStarterUITests"
+               ReferencedContainer = "container:SwiftIMEStarter.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -82,15 +64,15 @@
       allowLocationSimulation = "YES">
       <PathRunnable
          runnableDebuggingMode = "0"
-         FilePath = "/Library/Input Methods/Typut.app">
+         FilePath = "/Library/Input Methods/SwiftIMEStarter.app">
       </PathRunnable>
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "1A41E61326E745D9009B65D7"
-            BuildableName = "Typut.app"
-            BlueprintName = "Typut"
-            ReferencedContainer = "container:Typut.xcodeproj">
+            BuildableName = "SwiftIMEStarter.app"
+            BlueprintName = "SwiftIMEStarter"
+            ReferencedContainer = "container:SwiftIMEStarter.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
    </LaunchAction>
@@ -105,9 +87,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "1A41E61326E745D9009B65D7"
-            BuildableName = "Typut.app"
-            BlueprintName = "Typut"
-            ReferencedContainer = "container:Typut.xcodeproj">
+            BuildableName = "SwiftIMEStarter.app"
+            BlueprintName = "SwiftIMEStarter"
+            ReferencedContainer = "container:SwiftIMEStarter.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

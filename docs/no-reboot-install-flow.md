@@ -4,7 +4,7 @@ This document describes the install flow used by SwiftIMEStarter to make a macOS
 
 The flow is intended as a reusable starting point for future InputMethodKit projects, including AI-assisted input methods that need a reliable local development and installation loop.
 
-The current template ships with the Typut demo app and bundle identifiers, so install examples still reference `Typut.app`. Rename the app, bundle ID, and input mode IDs when turning the template into a separate product.
+The template app, Xcode project, build target, bundle ID, and input source identity are named `SwiftIMEStarter`.
 
 ## Problem
 
@@ -21,7 +21,7 @@ That flow is slow for development and painful for projects that need frequent it
 
 The install script performs these steps:
 
-1. Copies the included `Typut.app` demo into `/Library/Input Methods/Typut.app`.
+1. Copies `SwiftIMEStarter.app` into `/Library/Input Methods/SwiftIMEStarter.app`.
 2. Clears quarantine attributes and sets ownership/permissions.
 3. Registers the app with Launch Services.
 4. Registers the input source using Carbon TIS APIs.
@@ -39,7 +39,7 @@ sudo ./install.sh
 
 `compile.sh`
 
-Builds the Xcode project into `./build/Build/Products/<Configuration>/Typut.app`. By default it disables code signing for local development:
+Builds the Xcode project into `./build/Build/Products/<Configuration>/SwiftIMEStarter.app`. By default it disables code signing for local development:
 
 ```bash
 ./compile.sh
@@ -52,7 +52,7 @@ Installs the built app, registers the input source, syncs preference domains, an
 
 ```bash
 sudo ./install.sh
-sudo ./install.sh ./build/Build/Products/Release/Typut.app
+sudo ./install.sh ./build/Build/Products/Release/SwiftIMEStarter.app
 ```
 
 `scripts/register_input_source.swift`
@@ -88,9 +88,9 @@ SwiftIMEStarter keeps the input method small and understandable while solving a 
 
 The main extension points are:
 
-- `Typut/TyputInputController.swift` for input handling and composition behavior.
-- `Typut/Typography/Typography.swift` for candidate generation logic.
-- `Typut/Info.plist` for input source IDs, visible mode configuration, and IMKit metadata.
+- `SwiftIMEStarter/SwiftIMEStarterInputController.swift` for input handling and composition behavior.
+- `SwiftIMEStarter/Typography/Typography.swift` for candidate generation logic.
+- `SwiftIMEStarter/Info.plist` for input source IDs, visible mode configuration, and IMKit metadata.
 - `scripts/` for installation and current-session registration behavior.
 
 ## Known Limitations

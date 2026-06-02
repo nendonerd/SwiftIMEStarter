@@ -32,7 +32,7 @@ func mergeEntries(domain: String, key: String, entries: [Entry]) {
     var inserted = 0
     var removed = 0
 
-    // Keep only the per-domain allowed Typut entries.
+    // Keep only the per-domain allowed SwiftIMEStarter entries.
     current.removeAll { entry in
         guard (entry["Bundle ID"] as? String) == bundleId else { return false }
         if !entries.contains(where: { entryMatches(entry, $0) }) {

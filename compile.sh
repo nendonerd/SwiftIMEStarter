@@ -2,8 +2,8 @@
 set -euo pipefail
 
 CONFIGURATION="${1:-Debug}"
-PROJECT="Typut.xcodeproj"
-SCHEME="Typut"
+PROJECT="SwiftIMEStarter.xcodeproj"
+SCHEME="SwiftIMEStarter"
 BUILD_DIR="$(pwd)/build"
 NO_CODESIGN="${NO_CODESIGN:-1}"
 
@@ -32,5 +32,5 @@ fi
 
 xcodebuild "${XCODEBUILD_ARGS[@]}" build
 
-APP_PATH="$BUILD_DIR/Build/Products/$CONFIGURATION/Typut.app"
+APP_PATH="$BUILD_DIR/Build/Products/$CONFIGURATION/SwiftIMEStarter.app"
 echo "Build complete: $APP_PATH"

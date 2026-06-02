@@ -34,7 +34,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         self.candidatesWindow = IMKCandidates(server: server, panelType: kIMKSingleRowSteppingCandidatePanel, styleType: kIMKMain)
         NSLog("tried connection")
         NSLog(
-            "[TyputDebug][AppDelegate] launch pid=%d bundle=%@ connection=%@",
+            "[SwiftIMEStarterDebug][AppDelegate] launch pid=%d bundle=%@ connection=%@",
             ProcessInfo.processInfo.processIdentifier,
             Bundle.main.bundleIdentifier ?? "nil",
             Bundle.main.infoDictionary?["InputMethodConnectionName"] as? String ?? "nil"

@@ -1,6 +1,6 @@
 //
 //  Typography.swift
-//  Typut
+//  SwiftIMEStarter
 //
 //  Created by miwa on 2024/03/18.
 //

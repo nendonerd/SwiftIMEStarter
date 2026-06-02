@@ -9,19 +9,19 @@ set -euo pipefail
 if [[ $# -ge 1 ]]; then
   APP_PATH="$1"
 else
-  if [[ -d "./build/Build/Products/Debug/Typut.app" ]]; then
-    APP_PATH="./build/Build/Products/Debug/Typut.app"
-  elif [[ -d "./build/Build/Products/Release/Typut.app" ]]; then
-    APP_PATH="./build/Build/Products/Release/Typut.app"
-  elif [[ -d "./build/Release/Typut.app" ]]; then
-    APP_PATH="./build/Release/Typut.app"
+  if [[ -d "./build/Build/Products/Debug/SwiftIMEStarter.app" ]]; then
+    APP_PATH="./build/Build/Products/Debug/SwiftIMEStarter.app"
+  elif [[ -d "./build/Build/Products/Release/SwiftIMEStarter.app" ]]; then
+    APP_PATH="./build/Build/Products/Release/SwiftIMEStarter.app"
+  elif [[ -d "./build/Release/SwiftIMEStarter.app" ]]; then
+    APP_PATH="./build/Release/SwiftIMEStarter.app"
   else
-    APP_PATH="./build/Build/Products/Debug/Typut.app"
+    APP_PATH="./build/Build/Products/Debug/SwiftIMEStarter.app"
   fi
 fi
 
 DEST_DIR="/Library/Input Methods"
-DEST_APP="$DEST_DIR/Typut.app"
+DEST_APP="$DEST_DIR/SwiftIMEStarter.app"
 GUI_USER="${SUDO_USER:-$(stat -f%Su /dev/console)}"
 GUI_UID="$(id -u "$GUI_USER")"
 GUI_HOME="$(dscl . -read "/Users/$GUI_USER" NFSHomeDirectory | awk '{print $2}')"
@@ -45,7 +45,7 @@ refresh_gui_job() {
 
 if [[ ! -d "$APP_PATH" ]]; then
   echo "error: app not found: $APP_PATH"
-  echo "usage: $0 [path/to/Typut.app]"
+  echo "usage: $0 [path/to/SwiftIMEStarter.app]"
   exit 1
 fi
 
@@ -115,11 +115,11 @@ else
   echo "warning: inputsources still does not list mode $MODE_ID immediately"
 fi
 
-echo "Waiting for Typut input-source readiness (permission-grant flow, Ctrl-C to stop)..."
+echo "Waiting for SwiftIMEStarter input-source readiness (permission-grant flow, Ctrl-C to stop)..."
 run_as_gui_user env \
   SWIFT_MODULECACHE_PATH=/tmp/swift-module-cache \
   CLANG_MODULE_CACHE_PATH=/tmp/clang-module-cache \
   swift "$WATCH_READY_SWIFT_SCRIPT" "$BUNDLE_ID" "$MODE_ID" "0"
 
 echo "Installed to: $DEST_APP"
-echo "If Typut is still not listed, log out and log back in once."
+echo "If SwiftIMEStarter is still not listed, log out and log back in once."

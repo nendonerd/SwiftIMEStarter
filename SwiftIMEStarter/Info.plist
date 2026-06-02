@@ -9,9 +9,9 @@
 	<key>InputMethodConnectionName</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)_Connection</string>
 	<key>InputMethodServerControllerClass</key>
-	<string>$(PRODUCT_MODULE_NAME).TyputInputController</string>
+	<string>$(PRODUCT_MODULE_NAME).SwiftIMEStarterInputController</string>
 	<key>InputMethodServerDelegateClass</key>
-	<string>$(PRODUCT_MODULE_NAME).TyputInputController</string>
+	<string>$(PRODUCT_MODULE_NAME).SwiftIMEStarterInputController</string>
 	<key>LSBackgroundOnly</key>
 	<false/>
 	<key>LSUIElement</key>

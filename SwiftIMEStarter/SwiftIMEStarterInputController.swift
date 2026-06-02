@@ -1,6 +1,6 @@
 //
-//  TyputInputController.swift
-//  TyputInputController
+//  SwiftIMEStarterInputController.swift
+//  SwiftIMEStarterInputController
 //
 //  Created by ensan on 2021/09/07.
 //
@@ -96,8 +96,8 @@ enum InputState {
     }
 }
 
-@objc(TyputInputController)
-class TyputInputController: IMKInputController {
+@objc(SwiftIMEStarterInputController)
+class SwiftIMEStarterInputController: IMKInputController {
     private let rightOptionKeyCode: UInt16 = 61
     private var rightOptionHoldStart: Date? = nil
     private var rightOptionHoldCancelled = false
@@ -107,7 +107,7 @@ class TyputInputController: IMKInputController {
     private var candidatesWindow: IMKCandidates = IMKCandidates()
 
     private func debugLog(_ message: String) {
-        NSLog("[TyputDebug][InputController] \(message)")
+        NSLog("[SwiftIMEStarterDebug][InputController] \(message)")
     }
 
     // declares accepted events
